@@ -1,9 +1,19 @@
 <resources>
-    <string name="app_name">ZerohungerClient</string>
+    <string name="app_name">Zero Hunger</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="nav_header_title">Android Studio</string>
     <string name="nav_header_subtitle">android.studio@android.com</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Settings</string>
+
+    <string name="title_activity_fake_authentication">FakeAuthenticationActivity</string>
+    <string name="dummy_button">Dummy Button</string>
+    <string name="dummy_content">DUMMY\nCONTENT</string>
+    <string name="label_phone_number">Add Account</string>
+    <string name="label_register">Add Account</string>
+    <string name="phone_number_note">We will send an SMS with a confirmation code to your phone number</string>
+    <string name="phone_number_invalid_request">Invalid request</string>
+    <string name="phone_number_sms_quota">SMS quota exceeded</string>
+    <string name="phone_number_db_error">Database read error</string>
 </resources>
