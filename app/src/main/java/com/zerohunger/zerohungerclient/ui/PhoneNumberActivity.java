@@ -1,6 +1,8 @@
 package com.zerohunger.zerohungerclient.ui;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.TextInputEditText;
@@ -29,6 +31,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.zerohunger.zerohungerclient.R;
+import com.zerohunger.zerohungerclient.ui.model.User;
 
 import java.util.concurrent.TimeUnit;
 
@@ -46,6 +49,7 @@ public class PhoneNumberActivity extends AppCompatActivity {
     private boolean textPhoneCodeEmpty = false;
     private boolean authenticating = false;
     private String userId;
+    private String phoneNumber;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -181,7 +185,7 @@ public class PhoneNumberActivity extends AppCompatActivity {
 
     private void verifyPhoneNumber() {
         String phoneCode = textPhoneCode.getText().toString();
-        String phoneNumber = phoneCode + textPhoneNumber.getText().toString();
+        phoneNumber = phoneCode + textPhoneNumber.getText().toString();
         PhoneAuthProvider.getInstance().verifyPhoneNumber(
                 phoneNumber,
                 60,
@@ -209,21 +213,34 @@ public class PhoneNumberActivity extends AppCompatActivity {
         usersRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                SharedPreferences userPref = PhoneNumberActivity.this.getSharedPreferences(
+                        getString(R.string.preference_user_file_key),
+                        Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = userPref.edit();
+                editor.putString(
+                        getString(R.string.saved_profile_phone_number),
+                        phoneNumber);
                 if (!dataSnapshot.child(userId).exists()) {
                     finish();
                     Intent intent = new Intent(PhoneNumberActivity.this,
                             RegisterActivity.class);
                     startActivity(intent);
                 } else {
+                    User user = dataSnapshot.child(userId).getValue(User.class);
+                    String name = user.firstName + " " + user.lastName;
+                    editor.putString(
+                            getString(R.string.saved_profile_name),
+                            name);
                     finish();
                 }
+                editor.apply();
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
                 Toast toast = Toast.makeText(
                         PhoneNumberActivity.this,
-                        R.string.phone_number_db_error,
+                        "Database read error",
                         Toast.LENGTH_LONG);
                 toast.show();
                 authenticating = false;

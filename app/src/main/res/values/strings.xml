@@ -2,8 +2,8 @@
     <string name="app_name">Zero Hunger</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="nav_header_title">Android Studio</string>
-    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="nav_header_title">...</string>
+    <string name="nav_header_subtitle">...</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Settings</string>
 
@@ -15,5 +15,7 @@
     <string name="phone_number_note">We will send an SMS with a confirmation code to your phone number</string>
     <string name="phone_number_invalid_request">Invalid request</string>
     <string name="phone_number_sms_quota">SMS quota exceeded</string>
-    <string name="phone_number_db_error">Database read error</string>
+    <string name="preference_user_file_key">com.zerohunger.zerohungerclient.PREFERENCE_USER_FILE_KEY</string>;
+    <string name="saved_profile_name">com.zerohunger.zerohungerclient.SAVED_PROFILE_NAME</string>
+    <string name="saved_profile_phone_number">com.zerohunger.zerohungerclient.SAVED_PHONE_NUMBER</string>
 </resources>

@@ -1,9 +1,12 @@
 package com.zerohunger.zerohungerclient.ui;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -13,14 +16,22 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.FirebaseDatabase;
 import com.zerohunger.zerohungerclient.R;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     private FirebaseAuth mAuth;
+    private FirebaseDatabase mDatabase;
+
+    private TextView textNavHeaderPhoneNumber;
+    private TextView textNavHeaderName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,12 +41,12 @@ public class MainActivity extends AppCompatActivity
         setSupportActionBar(toolbar);
 
         mAuth = FirebaseAuth.getInstance();
+        mDatabase = FirebaseDatabase.getInstance();
         if (mAuth.getCurrentUser() == null) {
             Intent intent = new Intent(this, PhoneNumberActivity.class);
             startActivity(intent);
-        } else {
-
         }
+
 
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -54,7 +65,30 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+        View headerInNavigationView = navigationView.getHeaderView(0);
+        textNavHeaderPhoneNumber =
+                headerInNavigationView.findViewById(R.id.textMainNavHeaderPhoneNumber);
+        textNavHeaderName =
+                headerInNavigationView.findViewById(R.id.textMainNavHeaderName);
+        updateNavHeaderWithPreference();
+    }
 
+    private void updateNavHeaderWithPreference() {
+        SharedPreferences userPref = MainActivity.this.getSharedPreferences(
+                getString(R.string.preference_user_file_key),
+                Context.MODE_PRIVATE);
+        String phoneNumber = userPref.getString(
+                getString(R.string.saved_profile_phone_number),
+                null);
+        String name = userPref.getString(
+                getString(R.string.saved_profile_name),
+                null);
+        if (phoneNumber != null) {
+            textNavHeaderPhoneNumber.setText(phoneNumber);
+        }
+        if (name != null) {
+            textNavHeaderName.setText(name);
+        }
     }
 
     @Override

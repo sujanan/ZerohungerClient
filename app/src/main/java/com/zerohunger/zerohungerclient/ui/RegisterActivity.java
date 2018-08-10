@@ -1,5 +1,7 @@
 package com.zerohunger.zerohungerclient.ui;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.TextInputEditText;
 import android.support.v7.app.AppCompatActivity;
@@ -10,6 +12,7 @@ import android.view.KeyEvent;
 import android.view.View;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.PhoneAuthProvider;
 import com.google.firebase.database.FirebaseDatabase;
 import com.zerohunger.zerohungerclient.R;
 import com.zerohunger.zerohungerclient.ui.model.User;
@@ -99,6 +102,14 @@ public class RegisterActivity extends AppCompatActivity {
                     .child("users")
                     .child(userId)
                     .setValue(user);
+            SharedPreferences userPref = RegisterActivity.this.getSharedPreferences(
+                    getString(R.string.preference_user_file_key),
+                    Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = userPref.edit();
+            editor.putString(
+                    getString(R.string.saved_profile_name),
+                    user.firstName + " " + user.lastName);
+            editor.apply();
             finish();
         }
     }
