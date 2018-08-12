@@ -1,5 +1,6 @@
 package com.zerohunger.zerohungerclient.ui;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -36,6 +37,8 @@ import com.zerohunger.zerohungerclient.ui.model.User;
 import java.util.concurrent.TimeUnit;
 
 public class PhoneNumberActivity extends AppCompatActivity {
+
+    private static final int FROM_PHONE_NUMBER_TO_REGISTER = 1;
 
     private PhoneAuthProvider.OnVerificationStateChangedCallbacks phoneAuthCallbacks;
 
@@ -253,4 +256,5 @@ public class PhoneNumberActivity extends AppCompatActivity {
     public void onBackPressed() {
         moveTaskToBack(true);
     }
+
 }
