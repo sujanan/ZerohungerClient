@@ -1,15 +1,22 @@
 package com.zerohunger.zerohungerclient.ui;
 
 import android.Manifest;
-import android.app.Activity;
+import android.annotation.SuppressLint;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.location.GnssStatus;
 import android.location.Location;
+import android.location.LocationManager;
+import android.nfc.Tag;
+import android.os.Build;
 import android.os.Bundle;
-import android.os.PersistableBundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.RequiresApi;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -22,50 +29,87 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResponse;
+import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.FirebaseDatabase;
 import com.zerohunger.zerohungerclient.R;
 
+import static android.location.GpsStatus.GPS_EVENT_STARTED;
+import static android.location.GpsStatus.GPS_EVENT_STOPPED;
+
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback {
-
-    private static final int PERMISSION_REQUEST_ACCESS_FINE_LOCATION = 1;
-    private static final int DEFAULT_ZOOM = 15;
-    private static final LatLng mDefaultLocation = new LatLng(-33.8523341, 151.2106085);
-    private static final String KEY_CAMERA_POSITION = "camera_position";
-    private static final String KEY_LOCATION = "location";
+    private static final int REQUEST_CHECK_SETTINGS = 1;
+    private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 2;
+    private static final String TAG = "MainActivity";
 
     private TextView textNavHeaderPhoneNumber;
     private TextView textNavHeaderName;
+    private Button buttonLocation;
 
     private FirebaseAuth mAuth;
     private FirebaseDatabase mDatabase;
+    private FusedLocationProviderClient mFusedLocationClient;
+    private BroadcastReceiver mBroadcastReceiver;
     private GoogleMap mMap;
-    private CameraPosition mCameraPosition;
-    private FusedLocationProviderClient mFusedLocationProviderClient;
-    private boolean mLocationPermissionGranted;
     private Location mLastKnownLocation;
-    private boolean mMapFragmentAdded;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (savedInstanceState != null) {
-            mLastKnownLocation = savedInstanceState.getParcelable(KEY_LOCATION);
-            mCameraPosition = savedInstanceState.getParcelable(KEY_CAMERA_POSITION);
+
+        createBaseUI();
+
+        initFirebase();
+
+        initLocationClient();
+
+        if (!isLocationEnabled()) {
+            showLocationEnableButton();
         }
+
+        registerMapOnMapReadyCallbacks();
+
+        if (mAuth.getCurrentUser() == null) {
+            Intent intent = new Intent(MainActivity.this, PhoneNumberActivity.class);
+            startActivityForResult(intent, 1);
+        } else {
+        }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        updateNavHeaderWithPreference();
+        grantLocationPermission();
+        addGpsBroadcastReceiver();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        removeGpsBroadcastReceiver();
+    }
+
+    private void createBaseUI() {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -87,61 +131,137 @@ public class MainActivity extends AppCompatActivity
                 headerInNavigationView.findViewById(R.id.textMainNavHeaderPhoneNumber);
         textNavHeaderName =
                 headerInNavigationView.findViewById(R.id.textMainNavHeaderName);
-        updateNavHeaderWithPreference();
+        buttonLocation =
+                findViewById(R.id.buttonMainLocation);
+        hideLocationEnableButton();
+    }
 
-        mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(MainActivity.this);
-
+    private void initFirebase() {
         mAuth = FirebaseAuth.getInstance();
         mDatabase = FirebaseDatabase.getInstance();
-        if (mAuth.getCurrentUser() == null) {
-            mMapFragmentAdded = false;
-            Intent intent = new Intent(MainActivity.this, PhoneNumberActivity.class);
-            startActivity(intent);
+    }
+
+    private void initLocationClient() {
+        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+    }
+
+    private void registerMapOnMapReadyCallbacks() {
+        SupportMapFragment mapFragment =
+                (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
+    }
+
+    /* ========================================================================================= */
+    /* =================================== LOCATION SETTINGS =================================== */
+    /* ========================================================================================= */
+
+    private boolean isLocationEnabled() {
+        LocationManager locationManager;
+
+        locationManager = (LocationManager)
+                getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
+        try {
+            return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        } catch (Exception e) {}
+
+        return false;
+    }
+
+    private void showLocationEnableButton() {
+        buttonLocation.setVisibility(View.VISIBLE);
+    }
+
+    private void hideLocationEnableButton() {
+        buttonLocation.setVisibility(View.GONE);
+    }
+
+    private void requestLocationSettings() {
+        LocationRequest locationRequest;
+        LocationSettingsRequest.Builder builder;
+        Task<LocationSettingsResponse> task;
+        SettingsClient client;
+
+        locationRequest = new LocationRequest();
+        locationRequest.setInterval(10000);
+        locationRequest.setFastestInterval(5000);
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+        builder = new LocationSettingsRequest.Builder().addLocationRequest(locationRequest);
+        client = LocationServices.getSettingsClient(this);
+        task = client.checkLocationSettings(builder.build());
+
+        task.addOnSuccessListener(this, new OnSuccessListener<LocationSettingsResponse>() {
+            @Override
+            public void onSuccess(LocationSettingsResponse locationSettingsResponse) {
+            }
+        });
+        task.addOnFailureListener(this, new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                if (e instanceof ResolvableApiException) {
+                    try {
+                        ResolvableApiException resolvable = (ResolvableApiException) e;
+                        resolvable.startResolutionForResult(MainActivity.this,
+                                REQUEST_CHECK_SETTINGS);
+                    } catch (IntentSender.SendIntentException sendEx) {}
+                }
+            }
+        });
+    }
+
+    public void enableLocation(View view) {
+        if (isLocationPermissionGranted()) {
+            requestLocationSettings();
         } else {
-            mMapFragmentAdded = true;
-            SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                    .findFragmentById(R.id.map);
-            mapFragment.getMapAsync(this);
+            Context context = getApplicationContext();
+            CharSequence text = "Location permissions are not granted";
+            int duration = Toast.LENGTH_LONG;
+            Toast toast = Toast.makeText(context, text, duration);
+
+            toast.show();
         }
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
+    private void addGpsBroadcastReceiver() {
+        mBroadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent.getAction().matches(LocationManager.PROVIDERS_CHANGED_ACTION)) {
+                    if (isLocationEnabled()) {
+                        hideLocationEnableButton();
+                    } else {
+                        showLocationEnableButton();
+                    }
+                }
+            }
+        };
+        registerReceiver(mBroadcastReceiver,
+                new IntentFilter(LocationManager.PROVIDERS_CHANGED_ACTION));
     }
 
-    @Override
-    protected void onRestart() {
-        super.onRestart();
-        if (!mMapFragmentAdded) {
-            SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                    .findFragmentById(R.id.map);
-            mapFragment.getMapAsync(this);
-            mMapFragmentAdded = true;
-        }
+    private void removeGpsBroadcastReceiver() {
+        mBroadcastReceiver = null;
     }
 
-    @Override
-    public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
-        if (mMap != null) {
-            outState.putParcelable(KEY_CAMERA_POSITION, mMap.getCameraPosition());
-            outState.putParcelable(KEY_LOCATION, mLastKnownLocation);
-            super.onSaveInstanceState(outState);
-        }
-    }
+    /* =================================================================================== */
+    /* =================================== PERMISSIONS =================================== */
+    /* =================================================================================== */
 
-    private void getLocationPermission() {
+    private boolean isLocationPermissionGranted() {
         int i1 = ContextCompat.checkSelfPermission(
-                this.getApplicationContext(),
+                this,
                 Manifest.permission.ACCESS_FINE_LOCATION);
         int i2 = PackageManager.PERMISSION_GRANTED;
-        if (i1 == i2) {
-            mLocationPermissionGranted = true;
+        return i1 == i2;
+    }
+
+    private void grantLocationPermission() {
+        if (isLocationPermissionGranted()) {
         } else {
             ActivityCompat.requestPermissions(
-                    MainActivity.this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    PERMISSION_REQUEST_ACCESS_FINE_LOCATION);
+                    this,
+                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+                    PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
         }
     }
 
@@ -149,71 +269,49 @@ public class MainActivity extends AppCompatActivity
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
-        mLocationPermissionGranted = false;
-        switch (requestCode) {
-            case PERMISSION_REQUEST_ACCESS_FINE_LOCATION:
-                boolean b1 = grantResults.length > 0;
-                boolean b2 = b1 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
-                if (b2) {
-                    mLocationPermissionGranted = true;
-                }
-                break;
+        if (requestCode == PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION) {
+            boolean b = grantResults.length > 0;
+            b = b && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+            if (b && mMap != null) {
+                setLastKnownLocation();
+            }
         }
-        updateLocationUI();
+    }
+    /* ================================================================================== */
+    /* ==================================== LOCATION ==================================== */
+    /* ================================================================================== */
+    @SuppressLint("MissingPermission")
+    private void setLastKnownLocation () {
+        if (!isLocationPermissionGranted()) {
+            return;
+        }
+        mFusedLocationClient.getLastLocation().addOnSuccessListener(this,
+                new OnSuccessListener<Location>() {
+                    @Override
+                    public void onSuccess(Location location) {
+                        if (location != null) {
+                            changeCamera(location);
+                        }
+                    }
+                });
     }
 
-    private void updateLocationUI() {
+    /* ============================================================================== */
+    /* ==================================== MAPS ==================================== */
+    /* ============================================================================== */
+
+    @Override
+    public void onMapReady(GoogleMap map) {
+        mMap = map;
+        setLastKnownLocation();
+    }
+
+    private void changeCamera(Location location) {
         if (mMap == null) {
             return;
         }
-        try {
-            if (mLocationPermissionGranted) {
-                mMap.setMyLocationEnabled(true);
-                mMap.getUiSettings().setMyLocationButtonEnabled(true);
-            } else {
-                mMap.setMyLocationEnabled(false);
-                mMap.getUiSettings().setMyLocationButtonEnabled(false);
-                mLastKnownLocation = null;
-                getLocationPermission();
-            }
-        } catch (SecurityException e) {
-        }
-    }
-    
-    private void getDeviceLocation() {
-        try {
-            if (mLocationPermissionGranted) {
-                Task locationResult = mFusedLocationProviderClient.getLastLocation();
-                locationResult.addOnCompleteListener(MainActivity.this,
-                        new OnCompleteListener() {
-                            @Override
-                            public void onComplete(@NonNull Task task) {
-                                if (task.isSuccessful()) {
-                                    mLastKnownLocation = (Location) task.getResult();
-                                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
-                                            new LatLng(
-                                                    mLastKnownLocation.getLatitude(),
-                                                    mLastKnownLocation.getLongitude()),
-                                            DEFAULT_ZOOM));
-                                } else {
-                                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
-                                            mDefaultLocation,
-                                            DEFAULT_ZOOM));
-                                    mMap.getUiSettings().setMyLocationButtonEnabled(false);
-                                }
-                            }
-                        });
-            }
-        } catch (SecurityException e) {
-        }
-    }
-
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
-        getLocationPermission();
-        updateLocationUI();
-        getDeviceLocation();
+        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 10));
     }
 
     private void updateNavHeaderWithPreference() {
@@ -246,23 +344,16 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 
@@ -277,5 +368,4 @@ public class MainActivity extends AppCompatActivity
         drawer.closeDrawer(GravityCompat.START);
         return true;
     }
-
 }

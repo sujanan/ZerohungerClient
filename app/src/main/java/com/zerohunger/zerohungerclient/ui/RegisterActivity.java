@@ -113,6 +113,7 @@ public class RegisterActivity extends AppCompatActivity {
                     user.firstName + " " + user.lastName);
             editor.apply();
             finish();
+            PhoneNumberActivity.phoneNumberActivity.finish();
         }
     }
 

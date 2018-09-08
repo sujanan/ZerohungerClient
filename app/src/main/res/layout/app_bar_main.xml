@@ -20,6 +20,20 @@
 
     </android.support.design.widget.AppBarLayout>
 
-    <include layout="@layout/activity_maps" />
+    <include
+        android:id="@+id/include5"
+        layout="@layout/activity_maps" />
+
+    <Button
+        android:id="@+id/buttonMainLocation"
+        style="@style/Widget.AppCompat.Button.Colored"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
+        android:layout_marginTop="16dp"
+        android:text="Enable Location Services"
+        android:onClick="enableLocation"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
 </android.support.design.widget.CoordinatorLayout>

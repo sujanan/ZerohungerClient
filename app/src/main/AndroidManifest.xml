@@ -2,7 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.zerohunger.zerohungerclient">
 
-    <!-- uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" /-->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
 
     <!--
          The ACCESS_COARSE/FINE_LOCATION permissions are not required to use
@@ -31,8 +32,7 @@
         <activity
             android:name=".ui.PhoneNumberActivity"
             android:label="@string/label_phone_number"
-            android:windowSoftInputMode="adjustResize">
-        </activity>
+            android:windowSoftInputMode="adjustResize"></activity>
         <activity
             android:name=".ui.RegisterActivity"
             android:label="@string/label_register"
@@ -49,6 +49,9 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />
 
+        <activity
+            android:name=".MapsActivity"
+            android:label="@string/title_activity_maps"></activity>
     </application>
 
 </manifest>

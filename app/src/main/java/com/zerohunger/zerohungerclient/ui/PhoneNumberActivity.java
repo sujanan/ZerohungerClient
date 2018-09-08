@@ -38,6 +38,8 @@ import java.util.concurrent.TimeUnit;
 
 public class PhoneNumberActivity extends AppCompatActivity {
 
+    static Activity phoneNumberActivity;
+
     private static final int FROM_PHONE_NUMBER_TO_REGISTER = 1;
 
     private PhoneAuthProvider.OnVerificationStateChangedCallbacks phoneAuthCallbacks;
@@ -56,6 +58,7 @@ public class PhoneNumberActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        phoneNumberActivity = PhoneNumberActivity.this;
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_phone_number);
 
@@ -234,6 +237,7 @@ public class PhoneNumberActivity extends AppCompatActivity {
                     editor.putString(
                             getString(R.string.saved_profile_name),
                             name);
+                    setResult(1);
                     finish();
                 }
                 editor.apply();
@@ -250,6 +254,12 @@ public class PhoneNumberActivity extends AppCompatActivity {
                 resetUI();
             }
         });
+    }
+
+    @Override
+    public void finish() {
+        setResult(1);
+        super.finish();
     }
 
     @Override
