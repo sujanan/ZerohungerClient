@@ -32,7 +32,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.zerohunger.zerohungerclient.R;
-import com.zerohunger.zerohungerclient.ui.model.User;
+import com.zerohunger.zerohungerclient.model.User;
 
 import java.util.concurrent.TimeUnit;
 

@@ -1,8 +1,6 @@
 package com.zerohunger.zerohungerclient.ui;
 
-import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.TextInputEditText;
@@ -14,10 +12,9 @@ import android.view.KeyEvent;
 import android.view.View;
 
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.PhoneAuthProvider;
 import com.google.firebase.database.FirebaseDatabase;
 import com.zerohunger.zerohungerclient.R;
-import com.zerohunger.zerohungerclient.ui.model.User;
+import com.zerohunger.zerohungerclient.model.User;
 
 public class RegisterActivity extends AppCompatActivity {
 

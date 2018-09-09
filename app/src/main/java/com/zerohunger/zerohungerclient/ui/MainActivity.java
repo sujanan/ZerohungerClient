@@ -102,6 +102,8 @@ public class MainActivity extends AppCompatActivity implements
 
         registerFabCurrentLocationClickListener();
 
+        registerFabCurrentLocationLongClickListener();
+
         if (mAuth.getCurrentUser() == null) {
             Intent intent = new Intent(MainActivity.this, PhoneNumberActivity.class);
             startActivityForResult(intent, 1);
@@ -198,11 +200,12 @@ public class MainActivity extends AppCompatActivity implements
                     if (!mFirstTimeZoomDone) {
                         moveCameraToDefaultZoomLevel(location);
                         mFirstTimeZoomDone = true;
-                    } else {
-                        moveCamera(location);
-                    }
-                    if (!mUserInteracting) {
                         changeFabToBlue();
+                    } else {
+                        if (!mUserInteracting) {
+                            moveCamera(location);
+                            changeFabToBlue();
+                        }
                     }
                 }
             }
@@ -222,9 +225,19 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onClick(View v) {
                 if (mCurrentLocation != null) {
-                    moveCameraToDefaultZoomLevel(mCurrentLocation);
+                    moveCamera(mCurrentLocation);
                     mUserInteracting = false;
                 }
+            }
+        });
+    }
+
+    private void registerFabCurrentLocationLongClickListener() {
+        fabCurrentLocation.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                moveCameraToDefaultZoomLevel(mCurrentLocation);
+                return true;
             }
         });
     }
@@ -416,7 +429,6 @@ public class MainActivity extends AppCompatActivity implements
     @SuppressLint("MissingPermission")
     private void removeCurrentLocationMarker() {
         if (!isLocationEnabled() && mMap != null) {
-            removeCurrentLocationMarker();
             mMap.setMyLocationEnabled(false);
         }
     }

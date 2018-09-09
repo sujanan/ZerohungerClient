@@ -1,4 +1,4 @@
-package com.zerohunger.zerohungerclient.ui.model;
+package com.zerohunger.zerohungerclient.model;
 
 import com.google.firebase.database.IgnoreExtraProperties;
 
