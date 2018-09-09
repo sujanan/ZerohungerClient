@@ -2,6 +2,7 @@ package com.zerohunger.zerohungerclient.ui;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -9,14 +10,11 @@ import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.location.GnssStatus;
 import android.location.Location;
 import android.location.LocationManager;
-import android.nfc.Tag;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.annotation.RequiresApi;
+import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -35,7 +33,9 @@ import android.widget.Toast;
 
 import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResponse;
@@ -52,11 +52,13 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.FirebaseDatabase;
 import com.zerohunger.zerohungerclient.R;
 
-import static android.location.GpsStatus.GPS_EVENT_STARTED;
-import static android.location.GpsStatus.GPS_EVENT_STOPPED;
+public class MainActivity extends AppCompatActivity implements
+        NavigationView.OnNavigationItemSelectedListener,
+        OnMapReadyCallback,
+        GoogleMap.OnCameraIdleListener,
+        GoogleMap.OnCameraMoveStartedListener {
 
-public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback {
+    private static final int CAMERA_ZOOM_LEVEL = 20;
     private static final int REQUEST_CHECK_SETTINGS = 1;
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 2;
     private static final String TAG = "MainActivity";
@@ -64,6 +66,7 @@ public class MainActivity extends AppCompatActivity
     private TextView textNavHeaderPhoneNumber;
     private TextView textNavHeaderName;
     private Button buttonLocation;
+    private FloatingActionButton fabCurrentLocation;
 
     private FirebaseAuth mAuth;
     private FirebaseDatabase mDatabase;
@@ -71,6 +74,11 @@ public class MainActivity extends AppCompatActivity
     private BroadcastReceiver mBroadcastReceiver;
     private GoogleMap mMap;
     private Location mLastKnownLocation;
+    private Location mCurrentLocation;
+    private LocationCallback mLocationCallback;
+    private LocationRequest mLocationRequest;
+    private boolean mFirstTimeZoomDone;
+    private boolean mUserInteracting;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,17 +90,35 @@ public class MainActivity extends AppCompatActivity
 
         initLocationClient();
 
+        initLocationRequest();
+
+        initLocationCallbacks();
+
         if (!isLocationEnabled()) {
             showLocationEnableButton();
         }
 
         registerMapOnMapReadyCallbacks();
 
+        registerFabCurrentLocationClickListener();
+
         if (mAuth.getCurrentUser() == null) {
             Intent intent = new Intent(MainActivity.this, PhoneNumberActivity.class);
             startActivityForResult(intent, 1);
         } else {
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        startLocationUpdates();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        stopLocationUpdates();
     }
 
     @Override
@@ -134,6 +160,7 @@ public class MainActivity extends AppCompatActivity
         buttonLocation =
                 findViewById(R.id.buttonMainLocation);
         hideLocationEnableButton();
+        fabCurrentLocation = findViewById(R.id.fabMainCurrentLocation);
     }
 
     private void initFirebase() {
@@ -145,10 +172,61 @@ public class MainActivity extends AppCompatActivity
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
     }
 
+    private void initLocationRequest() {
+        mLocationRequest = new LocationRequest();
+        mLocationRequest.setInterval(10000);
+        mLocationRequest.setFastestInterval(5000);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+    }
+
     private void registerMapOnMapReadyCallbacks() {
         SupportMapFragment mapFragment =
                 (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+    }
+
+    private void initLocationCallbacks() {
+        mLocationCallback = new LocationCallback() {
+            @Override
+            public void onLocationResult(LocationResult locationResult) {
+                if (locationResult == null) {
+                    return;
+                }
+                for (Location location : locationResult.getLocations()) {
+                    Log.d(TAG, location.getLongitude() + ":" + location.getLatitude());
+                    mCurrentLocation = location;
+                    if (!mFirstTimeZoomDone) {
+                        moveCameraToDefaultZoomLevel(location);
+                        mFirstTimeZoomDone = true;
+                    } else {
+                        moveCamera(location);
+                    }
+                    if (!mUserInteracting) {
+                        changeFabToBlue();
+                    }
+                }
+            }
+        };
+    }
+
+    private void changeFabToBlue() {
+        fabCurrentLocation.setImageResource(R.drawable.ic_my_location_blue_24dp);
+    }
+
+    private void changeFabToBlack() {
+        fabCurrentLocation.setImageResource(R.drawable.ic_my_location_black_24dp);
+    }
+
+    private void registerFabCurrentLocationClickListener() {
+        fabCurrentLocation.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mCurrentLocation != null) {
+                    moveCameraToDefaultZoomLevel(mCurrentLocation);
+                    mUserInteracting = false;
+                }
+            }
+        });
     }
 
     /* ========================================================================================= */
@@ -176,23 +254,18 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void requestLocationSettings() {
-        LocationRequest locationRequest;
         LocationSettingsRequest.Builder builder;
         Task<LocationSettingsResponse> task;
         SettingsClient client;
 
-        locationRequest = new LocationRequest();
-        locationRequest.setInterval(10000);
-        locationRequest.setFastestInterval(5000);
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-
-        builder = new LocationSettingsRequest.Builder().addLocationRequest(locationRequest);
+        builder = new LocationSettingsRequest.Builder().addLocationRequest(mLocationRequest);
         client = LocationServices.getSettingsClient(this);
         task = client.checkLocationSettings(builder.build());
 
         task.addOnSuccessListener(this, new OnSuccessListener<LocationSettingsResponse>() {
             @Override
             public void onSuccess(LocationSettingsResponse locationSettingsResponse) {
+                startLocationUpdates();
             }
         });
         task.addOnFailureListener(this, new OnFailureListener() {
@@ -229,8 +302,10 @@ public class MainActivity extends AppCompatActivity
                 if (intent.getAction().matches(LocationManager.PROVIDERS_CHANGED_ACTION)) {
                     if (isLocationEnabled()) {
                         hideLocationEnableButton();
+                        addCurrentLocationMarker();
                     } else {
                         showLocationEnableButton();
+                        changeFabToBlack();
                     }
                 }
             }
@@ -274,6 +349,7 @@ public class MainActivity extends AppCompatActivity
             b = b && grantResults[0] == PackageManager.PERMISSION_GRANTED;
             if (b && mMap != null) {
                 setLastKnownLocation();
+                addCurrentLocationMarker();
             }
         }
     }
@@ -290,10 +366,29 @@ public class MainActivity extends AppCompatActivity
                     @Override
                     public void onSuccess(Location location) {
                         if (location != null) {
-                            changeCamera(location);
+                            moveCameraToDefaultZoomLevel(location);
+                        } else {
+                            Log.d(TAG, "location null");
                         }
                     }
                 });
+    }
+
+    @SuppressLint("MissingPermission")
+    private void startLocationUpdates() {
+        if (!isLocationEnabled()) {
+            return;
+        }
+        if (!isLocationPermissionGranted()) {
+            return;
+        }
+        mFirstTimeZoomDone = false;
+        mFusedLocationClient.requestLocationUpdates(
+                mLocationRequest, mLocationCallback, null);
+    }
+
+    private void stopLocationUpdates() {
+        mFusedLocationClient.removeLocationUpdates(mLocationCallback);
     }
 
     /* ============================================================================== */
@@ -303,15 +398,55 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onMapReady(GoogleMap map) {
         mMap = map;
+
+        mMap.setOnCameraMoveStartedListener(this);
+        mMap.setMinZoomPreference(10);
+        mMap.setMaxZoomPreference(CAMERA_ZOOM_LEVEL);
+        addCurrentLocationMarker();
         setLastKnownLocation();
     }
 
-    private void changeCamera(Location location) {
+    @SuppressLint("MissingPermission")
+    private void addCurrentLocationMarker() {
+        if (isLocationPermissionGranted() && isLocationEnabled() && mMap != null) {
+           mMap.setMyLocationEnabled(true);
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private void removeCurrentLocationMarker() {
+        if (!isLocationEnabled() && mMap != null) {
+            removeCurrentLocationMarker();
+            mMap.setMyLocationEnabled(false);
+        }
+    }
+
+    private void moveCamera(Location location) {
         if (mMap == null) {
             return;
         }
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 10));
+        mMap.animateCamera(CameraUpdateFactory.newLatLng(latLng));
+    }
+
+    private void moveCameraToDefaultZoomLevel(Location location) {
+        if (mMap == null) {
+            return;
+        }
+        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, CAMERA_ZOOM_LEVEL));
+    }
+
+    @Override
+    public void onCameraIdle() {
+    }
+
+    @Override
+    public void onCameraMoveStarted(int i) {
+        if (i == GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE) {
+            mUserInteracting = true;
+            changeFabToBlack();
+        }
     }
 
     private void updateNavHeaderWithPreference() {
@@ -367,5 +502,17 @@ public class MainActivity extends AppCompatActivity
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+            case REQUEST_CHECK_SETTINGS:
+                switch (resultCode) {
+                    case Activity.RESULT_OK:
+                        startLocationUpdates();
+                        break;
+                }
+        }
     }
 }
