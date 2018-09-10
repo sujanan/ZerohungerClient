@@ -4,6 +4,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -14,6 +15,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.GenericTypeIndicator;
 import com.google.firebase.database.ValueEventListener;
+import com.zerohunger.zerohungerclient.constants.MapConstants;
 import com.zerohunger.zerohungerclient.model.Inventory;
 
 import java.util.HashMap;
@@ -96,7 +98,10 @@ public class InventoryStateUpdater {
         Marker marker;
 
         latLng = new LatLng(inventory.lat, inventory.lng);
-        marker = map.addMarker(new MarkerOptions().position(latLng).title(inventory.traderId));
+        marker = map.addMarker(new MarkerOptions()
+                .position(latLng)
+                .title(inventory.traderId)
+                .icon(BitmapDescriptorFactory.fromResource(MapConstants.MARKER)));
         markerMap.put(id, marker);
     }
 
