@@ -79,6 +79,7 @@ public class MainActivity extends AppCompatActivity implements
     private LocationRequest mLocationRequest;
     private boolean mFirstTimeZoomDone;
     private boolean mUserInteracting;
+    private InventoryStateUpdater mInventoryStateUpdater;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -415,6 +416,8 @@ public class MainActivity extends AppCompatActivity implements
         mMap.setOnCameraMoveStartedListener(this);
         mMap.setMinZoomPreference(10);
         mMap.setMaxZoomPreference(CAMERA_ZOOM_LEVEL);
+        mInventoryStateUpdater = new InventoryStateUpdater(mMap);
+        mInventoryStateUpdater.startReading();
         addCurrentLocationMarker();
         setLastKnownLocation();
     }
