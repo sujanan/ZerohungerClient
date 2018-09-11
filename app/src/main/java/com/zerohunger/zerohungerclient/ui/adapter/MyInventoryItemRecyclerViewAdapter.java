@@ -40,8 +40,9 @@ public class MyInventoryItemRecyclerViewAdapter extends RecyclerView.Adapter<MyI
             return;
         }
         holder.mItem = mValues.get(position);
-        holder.mIdView.setText(mValues.get(position).getName());
-        holder.mContentView.setText(mValues.get(position).getPrice().toString());
+        holder.mItemName.setText(mValues.get(position).getName());
+        holder.mItemPrice.setText("Price: $" + mValues.get(position).getPrice().toString());
+        holder.mItemQuantity.setText("Available: " + mValues.get(position).getQuantity().toString());
 
         holder.mView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -63,20 +64,22 @@ public class MyInventoryItemRecyclerViewAdapter extends RecyclerView.Adapter<MyI
 
     public class ViewHolder extends RecyclerView.ViewHolder {
         public final View mView;
-        public final TextView mIdView;
-        public final TextView mContentView;
+        public final TextView mItemName;
+        public final TextView mItemPrice;
+        public final TextView mItemQuantity;
         public DummyInventoryItem mItem;
 
         public ViewHolder(View view) {
             super(view);
             mView = view;
-            mIdView = (TextView) view.findViewById(R.id.item_number);
-            mContentView = (TextView) view.findViewById(R.id.content);
+            mItemName = view.findViewById(R.id.item_name);
+            mItemPrice = view.findViewById(R.id.item_price);
+            mItemQuantity = view.findViewById(R.id.item_quantity);
         }
 
         @Override
         public String toString() {
-            return super.toString() + " '" + mContentView.getText() + "'";
+            return super.toString();
         }
     }
 }
