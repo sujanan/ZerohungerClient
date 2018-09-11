@@ -52,6 +52,7 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.FirebaseDatabase;
 import com.zerohunger.zerohungerclient.R;
+import com.zerohunger.zerohungerclient.constants.CommonConstants;
 
 public class MainActivity extends AppCompatActivity implements
         NavigationView.OnNavigationItemSelectedListener,
@@ -469,6 +470,7 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onInfoWindowClick(Marker marker) {
         Intent intent = new Intent(this, InventoryActivity.class);
+        intent.putExtra(CommonConstants.EXTRA_INVENTORY_ACTIVITY, (String) marker.getTag());
         startActivity(intent);
     }
 

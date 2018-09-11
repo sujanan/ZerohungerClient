@@ -122,6 +122,7 @@ public class InventoryStateUpdater {
                 .title(inventory.traderId)
                 .icon(BitmapDescriptorFactory.fromResource(MapConstants.MARKER))
                 .snippet(Long.toString(inventory.quantity)));
+        marker.setTag(id);
 
         markerMap.put(id, marker);
         traderMarkerUpdateHashMap.put(id, traderMarkerUpdate);
@@ -138,6 +139,7 @@ public class InventoryStateUpdater {
 
         marker = markerMap.get(id);
         stopIndirectUpdate(id);
+        marker.setTag(null);
         marker.remove();
     }
 
