@@ -45,6 +45,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
@@ -56,7 +57,8 @@ public class MainActivity extends AppCompatActivity implements
         NavigationView.OnNavigationItemSelectedListener,
         OnMapReadyCallback,
         GoogleMap.OnCameraIdleListener,
-        GoogleMap.OnCameraMoveStartedListener {
+        GoogleMap.OnCameraMoveStartedListener,
+        GoogleMap.OnInfoWindowClickListener {
 
     private static final int CAMERA_ZOOM_LEVEL = 20;
     private static final int REQUEST_CHECK_SETTINGS = 1;
@@ -196,7 +198,6 @@ public class MainActivity extends AppCompatActivity implements
                     return;
                 }
                 for (Location location : locationResult.getLocations()) {
-                    Log.d(TAG, location.getLongitude() + ":" + location.getLatitude());
                     mCurrentLocation = location;
                     if (!mFirstTimeZoomDone) {
                         moveCameraToDefaultZoomLevel(location);
@@ -418,6 +419,7 @@ public class MainActivity extends AppCompatActivity implements
         mMap.setMaxZoomPreference(CAMERA_ZOOM_LEVEL);
         mInventoryStateUpdater = new InventoryStateUpdater(mMap);
         mInventoryStateUpdater.startReading();
+        mMap.setOnInfoWindowClickListener(this);
         addCurrentLocationMarker();
         setLastKnownLocation();
     }
@@ -462,6 +464,12 @@ public class MainActivity extends AppCompatActivity implements
             mUserInteracting = true;
             changeFabToBlack();
         }
+    }
+
+    @Override
+    public void onInfoWindowClick(Marker marker) {
+        Intent intent = new Intent(this, InventoryActivity.class);
+        startActivity(intent);
     }
 
     private void updateNavHeaderWithPreference() {

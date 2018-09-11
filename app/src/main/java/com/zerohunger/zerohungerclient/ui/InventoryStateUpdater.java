@@ -15,6 +15,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.GenericTypeIndicator;
 import com.google.firebase.database.ValueEventListener;
+import com.zerohunger.zerohungerclient.constants.DatabaseConstants;
 import com.zerohunger.zerohungerclient.constants.MapConstants;
 import com.zerohunger.zerohungerclient.model.Inventory;
 
@@ -24,14 +25,18 @@ import java.util.Map;
 public class InventoryStateUpdater {
 
     private GoogleMap map;
-    private DatabaseReference database;
+    private DatabaseReference inventoriesRef;
     private ChildEventListener childEventListener;
     private HashMap<String, Marker> markerMap;
+    private HashMap<String, TraderMarkerUpdate> traderMarkerUpdateHashMap;
+    private HashMap<String, ItemMarkerUpdate> itemMarkerUpdateHashMap;
 
     public InventoryStateUpdater(final GoogleMap map) {
         this.map = map;
         markerMap = new HashMap<>();
-        database = FirebaseDatabase.getInstance().getReference().child("inventory");
+        traderMarkerUpdateHashMap = new HashMap<>();
+        itemMarkerUpdateHashMap = new HashMap<>();
+        initDatabaseReferences();
 
         childEventListener = new ChildEventListener() {
             @Override
@@ -62,12 +67,18 @@ public class InventoryStateUpdater {
         };
     }
 
+    private void initDatabaseReferences() {
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+
+        inventoriesRef = database.getReference(DatabaseConstants.INVENTORIES);
+    }
+
     public void startReading() {
-        database.addListenerForSingleValueEvent(new ValueEventListener() {
+        inventoriesRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 initializeMarkerList(dataSnapshot);
-                database.addChildEventListener(childEventListener);
+                inventoriesRef.addChildEventListener(childEventListener);
             }
 
             @Override
@@ -90,19 +101,33 @@ public class InventoryStateUpdater {
         }
     }
 
+    private void indirectUpdate(MarkerUpdateStrategy strategy, Marker marker, String id) {
+        strategy.update(marker, id);
+    }
+
     private void addMarker(String id, Inventory inventory) {
         if (map == null) {
             return;
         }
         LatLng latLng;
         Marker marker;
+        TraderMarkerUpdate traderMarkerUpdate;
+        ItemMarkerUpdate itemMarkerUpdate;
 
+        traderMarkerUpdate = new TraderMarkerUpdate();
+        itemMarkerUpdate = new ItemMarkerUpdate();
         latLng = new LatLng(inventory.lat, inventory.lng);
         marker = map.addMarker(new MarkerOptions()
                 .position(latLng)
                 .title(inventory.traderId)
-                .icon(BitmapDescriptorFactory.fromResource(MapConstants.MARKER)));
+                .icon(BitmapDescriptorFactory.fromResource(MapConstants.MARKER))
+                .snippet(Long.toString(inventory.quantity)));
+
         markerMap.put(id, marker);
+        traderMarkerUpdateHashMap.put(id, traderMarkerUpdate);
+
+        indirectUpdate(traderMarkerUpdate, marker, inventory.traderId);
+        indirectUpdate(itemMarkerUpdate, marker, inventory.itemId);
     }
 
     private void removeMarker(String id) {
@@ -112,10 +137,18 @@ public class InventoryStateUpdater {
         Marker marker;
 
         marker = markerMap.get(id);
+        stopIndirectUpdate(id);
         marker.remove();
     }
 
+    private void stopIndirectUpdate(String id) {
+        TraderMarkerUpdate traderMarkerUpdate = traderMarkerUpdateHashMap.get(id);
+        ItemMarkerUpdate itemMarkerUpdate = itemMarkerUpdateHashMap.get(id);
+        traderMarkerUpdate.remove();
+        itemMarkerUpdate.remove();
+    }
+
     public void stopReading() {
-        database.removeEventListener(childEventListener);
+        inventoriesRef.removeEventListener(childEventListener);
     }
 }
