@@ -54,7 +54,8 @@
         <activity
             android:name=".MapsActivity"
             android:label="@string/title_activity_maps" />
-        <activity android:name=".ui.InventoryActivity"></activity>
+        <activity android:name=".ui.InventoryActivity" />
+        <activity android:name=".ui.OrderActivity"></activity>
     </application>
 
 </manifest>

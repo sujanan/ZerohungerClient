@@ -61,7 +61,7 @@ public class MainActivity extends AppCompatActivity implements
         GoogleMap.OnCameraMoveStartedListener,
         GoogleMap.OnInfoWindowClickListener {
 
-    private static final int CAMERA_ZOOM_LEVEL = 20;
+    private static final int CAMERA_ZOOM_LEVEL = 16;
     private static final int REQUEST_CHECK_SETTINGS = 1;
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 2;
     private static final String TAG = "MainActivity";
@@ -522,6 +522,10 @@ public class MainActivity extends AppCompatActivity implements
     public boolean onNavigationItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.nav_map:
+                break;
+            case R.id.nav_orders:
+                Intent intent = new Intent(this, OrderActivity.class);
+                startActivity(intent);
                 break;
         }
         DrawerLayout drawer = findViewById(R.id.drawer_layout);

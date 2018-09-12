@@ -1,6 +1,7 @@
 package com.zerohunger.zerohungerclient.ui.adapter;
 
 import android.annotation.SuppressLint;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,6 +15,7 @@ import java.util.List;
 
 public class MyInventoryItemRecyclerViewAdapter extends RecyclerView.Adapter<MyInventoryItemRecyclerViewAdapter.ViewHolder> {
 
+    public static Long qqq;
     private final OnListFragmentInteractionListener mListener;
     private List<DummyInventoryItem> mValues;
 
@@ -29,6 +31,35 @@ public class MyInventoryItemRecyclerViewAdapter extends RecyclerView.Adapter<MyI
                         R.layout.fragment_inventoryitem,
                         parent,
                         false);
+
+        FloatingActionButton itemInc = view.findViewById(R.id.item_inc);
+        FloatingActionButton itemDec = view.findViewById(R.id.item_dec);
+        final TextView selectedItemQuantity = view.findViewById(R.id.selected_item_quantity);
+
+        itemInc.setOnClickListener(new View.OnClickListener() {
+            @SuppressLint("SetTextI18n")
+            @Override
+            public void onClick(View v) {
+                Long q = Long.parseLong(selectedItemQuantity.getText().toString());
+                q = q + 1;
+                qqq = q;
+                selectedItemQuantity.setText(Long.toString(q));
+            }
+        });
+
+        itemDec.setOnClickListener(new View.OnClickListener() {
+            @SuppressLint("SetTextI18n")
+            @Override
+            public void onClick(View v) {
+                Long q = Long.parseLong(selectedItemQuantity.getText().toString());
+                if (q == 0) {
+                    return;
+                }
+                q = q - 1;
+                qqq = q;
+                selectedItemQuantity.setText(Long.toString(q));
+            }
+        });
 
         return new ViewHolder(view);
     }

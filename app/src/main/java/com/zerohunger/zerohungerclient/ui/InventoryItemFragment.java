@@ -1,9 +1,11 @@
 package com.zerohunger.zerohungerclient.ui;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -11,6 +13,8 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -25,6 +29,8 @@ import com.zerohunger.zerohungerclient.model.Inventory;
 import com.zerohunger.zerohungerclient.model.Item;
 import com.zerohunger.zerohungerclient.ui.adapter.DummyInventoryItem;
 import com.zerohunger.zerohungerclient.ui.adapter.MyInventoryItemRecyclerViewAdapter;
+
+import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -77,6 +83,7 @@ public class InventoryItemFragment extends Fragment {
             recyclerView.setAdapter(mAdapter);
             addInventoryListener();
         }
+
         return view;
     }
 
@@ -94,6 +101,8 @@ public class InventoryItemFragment extends Fragment {
                             Item i = dataSnapshot.getValue(Item.class);
                             DummyInventoryItem newItem = new DummyInventoryItem();
 
+                            newItem.setId(dataSnapshot.getKey());
+                            newItem.setTraderId(inventory.traderId);
                             newItem.setName(i.name);
                             newItem.setPrice(inventory.price);
                             newItem.setQuantity(inventory.quantity);
