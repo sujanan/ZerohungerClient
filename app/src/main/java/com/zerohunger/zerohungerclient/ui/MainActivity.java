@@ -84,6 +84,8 @@ public class MainActivity extends AppCompatActivity implements
     private boolean mUserInteracting;
     private InventoryStateUpdater mInventoryStateUpdater;
 
+    public static String userName;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -489,6 +491,7 @@ public class MainActivity extends AppCompatActivity implements
         }
         if (name != null) {
             textNavHeaderName.setText(name);
+            userName = name;
         }
     }
 

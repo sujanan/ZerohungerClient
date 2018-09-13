@@ -37,7 +37,7 @@ public class MyOrderRecyclerViewAdapter extends RecyclerView.Adapter<MyOrderRecy
     public void onBindViewHolder(final ViewHolder holder, int position) {
         holder.mItem = mValues.get(position);
         holder.itemName.setText(mValues.get(position).getItemName());
-        holder.price.setText("Price: $" + mValues.get(position).getPrice().toString());
+        holder.price.setText("Price: LKR" + mValues.get(position).getPrice().toString());
         holder.quantity.setText("Quantity: " + mValues.get(position).getQuantity().toString());
 
         holder.mView.setOnClickListener(new View.OnClickListener() {

@@ -38,21 +38,27 @@ public class InventoryActivity extends AppCompatActivity implements OnListFragme
     private void makeTheOrder() {
         String traderId;
         String clientId;
+        String clientName;
         String itemId;
+        String itemnName;
         Double price;
         Long quantity;
         Long startedTime;
 
         traderId = mItem.getTraderId();
         itemId = mItem.getId();
+        itemnName = mItem.getName();
         price = mItem.getPrice();
         quantity = MyInventoryItemRecyclerViewAdapter.qqq;
         clientId = FirebaseAuth.getInstance().getUid();
+        clientName = MainActivity.userName;
         startedTime = System.currentTimeMillis() / 1000L;
 
         Order order = new Order(
                 clientId,
+                clientName,
                 itemId,
+                itemnName,
                 price,
                 quantity,
                 startedTime);
